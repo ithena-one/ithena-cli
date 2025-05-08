@@ -307,3 +307,7 @@ ithena-cli auth logout   # Logout and remove credentials from keychain
 4.  Build the binary: `go build -o ithena-cli ./main.go`
 
 The resulting `ithena-cli` binary will be in the current directory.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
