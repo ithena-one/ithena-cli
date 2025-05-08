@@ -17,24 +17,40 @@ The Ithena CLI (`ithena-cli`) makes debugging your **Model Context Protocol (MCP
 
 ## Installation
 
-**1. Download the Latest Release:**
+**Recommended Method (Linux/macOS):**
 
-Go to the [Ithena CLI GitHub Releases page](https://github.com/ithena-one/ithena-cli-releases/releases) (Note: Replace with your actual releases URL) and download the appropriate binary for your operating system and architecture (e.g., `ithena-cli-darwin-amd64`, `ithena-cli-linux-arm64`).
+Open your terminal and run the following command to download and install the latest version of `ithena-cli` automatically:
 
-**2. Make it Executable and Place in your PATH:**
+```bash
+curl -sfL https://raw.githubusercontent.com/ithena-one/ithena-cli/main/install.sh | bash
+```
 
-Open your terminal. After downloading, make the binary executable and move it to a directory in your system's PATH.
+This script will:
+1.  Detect your operating system (Linux or macOS) and architecture (amd64 or arm64).
+2.  Download the correct binary from the latest GitHub release.
+3.  Make it executable.
+4.  Attempt to move it to `/usr/local/bin/ithena-cli`. If this directory is not writable, it will prompt for `sudo` access.
 
-*   **For macOS / Linux:**
+**Manual Installation:**
+
+If you prefer, you can still install `ithena-cli` manually:
+
+1.  **Download the Latest Release:**
+    Go to the [Ithena CLI GitHub Releases page](https://github.com/ithena-one/ithena-cli/releases) and download the appropriate `ithena-cli_OS_ARCH.tar.gz` archive for your operating system and architecture (e.g., `ithena-cli_darwin_amd64.tar.gz`, `ithena-cli_linux_arm64.tar.gz`).
+
+2.  **Extract, Make Executable, and Place in your PATH:**
+    Open your terminal. After downloading:
     ```bash
     # Example (replace with your actual downloaded filename and desired path)
-    chmod +x ./ithena-cli-darwin-amd64
-    sudo mv ./ithena-cli-darwin-amd64 /usr/local/bin/ithena-cli
+    tar -xzf ithena-cli_your-os_your-arch.tar.gz
+    chmod +x ./ithena-cli
+    sudo mv ./ithena-cli /usr/local/bin/ithena-cli
     ```
 
 *   **For Windows:**
-    1.  Download the `.exe` file.
-    2.  Move `ithena-cli.exe` to a folder that is included in your system's PATH environment variable (e.g., you could create `C:\Program Files\ithena-cli\` and add that to PATH).
+    1.  Download the `ithena-cli_windows_amd64.zip` (or equivalent) file from the [Releases page](https://github.com/ithena-one/ithena-cli/releases).
+    2.  Extract `ithena-cli.exe`.
+    3.  Move `ithena-cli.exe` to a folder that is included in your system's PATH environment variable (e.g., you could create `C:\Program Files\ithena-cli\` and add that to PATH).
 
 **3. Verify Installation:**
 ```bash
