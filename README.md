@@ -1,4 +1,12 @@
+<p align="center">
+  <img src="./public/logo-white.png" alt="Ithena Logo" width="200">
+</p>
+
 # Ithena CLI for MCP Observability
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![X Follow](https://img.shields.io/twitter/follow/andellvan?style=social)](https://x.com/andellvan)
+
+
 
 The Ithena CLI (`ithena-cli`) makes debugging your **Model Context Protocol (MCP)** interactions effortless. It acts as a lightweight wrapper around your MCP server commands, instantly showing you the JSON-RPC messages flowing between your AI agent (client) and server.
 
