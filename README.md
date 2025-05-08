@@ -304,14 +304,13 @@ ithena-cli auth logout   # Logout and remove credentials from keychain
 ```
 
 **Other Global Flags:**
-*   `--observe-url <url>`: Overrides the default Ithena platform API endpoint for sending logs (Default: `https://ithena.one/api/v1/observe`).
 *   `--verbose`: Enables verbose logging output from `ithena-cli` itself for debugging the CLI.
 
 ## Building from Source
 
 1.  Ensure you have Go installed (version 1.21+ recommended).
-2.  Clone the repository: `git clone https://github.com/ithena-one/Ithena.git` (Note: Replace with your actual CLI repo URL)
-3.  Navigate to the CLI directory: `cd Ithena/packages/cli` (Adjust path as needed)
+2.  Clone the repository: `git clone https://github.com/ithena-one/Ithena.git`
+3.  Navigate to the CLI directory: `cd Ithena/packages/cli`
 4.  Build the binary: `go build -o ithena-cli ./main.go`
 
 The resulting `ithena-cli` binary will be in the current directory.
