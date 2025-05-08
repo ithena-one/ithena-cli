@@ -2,6 +2,8 @@
 
 The Ithena CLI (`ithena-cli`) makes debugging your **Model Context Protocol (MCP)** interactions effortless. It acts as a lightweight wrapper around your MCP server commands, instantly showing you the JSON-RPC messages flowing between your AI agent (client) and server.
 
+**Unlock the full potential of MCP observability with the [Ithena.one platform](https://ithena.one) for persistent storage, team collaboration, and advanced analytics.**
+
 **See your MCP traffic locally, in real-time, without sending data to the cloud.**
 
 ## Key Benefits for MCP Developers
@@ -13,7 +15,7 @@ The Ithena CLI (`ithena-cli`) makes debugging your **Model Context Protocol (MCP
 *   **Works with Existing MCP Servers:** Easily wrap official servers (like the GitHub MCP Server) or your custom implementations.
 *   **JSON-RPC Aware:** Understands and pretty-prints MCP's JSON-RPC messages for easy reading.
 *   **Securely Handles Secrets:** Uses placeholders to inject sensitive data (like API keys for your MCP server) from your system keyring or environment variables, keeping them out of your config files when using `wrappers.yaml`.
-*   **(Optional) Cloud Platform:** If you choose, you can authenticate to send audit logs to the Ithena platform for persistent storage, team collaboration, and advanced analytics.
+*   **Enhanced Cloud Capabilities (Optional):** Unlock persistent storage, team collaboration, and advanced analytics by connecting to the [Ithena.one platform](https://ithena.one).
 
 ## Installation
 
@@ -56,6 +58,16 @@ If you prefer, you can still install `ithena-cli` manually:
 ```bash
 ithena-cli --version
 ```
+
+**4. Connect to the Ithena Platform (Recommended for Full Experience):**
+
+While `ithena-cli` works perfectly for local debugging, connecting it to the [Ithena.one platform](https://ithena.one) unlocks persistent storage for your MCP logs, team collaboration features, and advanced analytics.
+
+To connect, run:
+```bash
+ithena-cli auth
+```
+Follow the on-screen instructions. This will securely link the CLI to your Ithena account.
 
 ## Quick Start: Adding MCP Observability
 

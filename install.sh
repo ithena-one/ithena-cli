@@ -135,4 +135,5 @@ fi
 
 # Cleanup is handled by the trap
 echo_info "Installation complete! You may need to open a new terminal or run 'source ~/.bashrc' (or equivalent for your shell) for the command to be available."
-echo_info "Verify by running: $BINARY_NAME --version" 
+echo_info "Verify by running: $BINARY_NAME --version"
+echo_info "To connect to the Ithena platform for enhanced features (like persistent storage and team collaboration), run: $BINARY_NAME auth" 
