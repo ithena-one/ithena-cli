@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on tags like v1.0.0, v0.1.0, etc.
+
+permissions:
+  contents: write # Needed to create releases
+  # id-token: write # Uncomment if using OIDC for provenance
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for changelog generation
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21' # Specify your Go version, or use 'stable'
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          # The version of GoReleaser to use.
+          # It is recommended to use the latest version.
+          # See https://github.com/goreleaser/goreleaser-action/releases
+          version: latest
+          args: release --clean # Use --clean to ensure a clean build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # If you need to sign artifacts, you might need a GPG_FINGERPRINT
+          # GPG_FINGERPRINT: ${{ secrets.GPG_FINGERPRINT }} 

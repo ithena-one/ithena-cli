@@ -1,0 +1,6 @@
+dist/
+.DS_Store
+.idea/
+.vscode/
+.env
+.env.local

@@ -1,0 +1,101 @@
+version: 1
+
+# .goreleaser.yaml
+# Visit https://goreleaser.com/intro/ for documentation
+
+# Project metadata
+project_name: ithena-cli
+
+# Environment variables for the build
+env:
+  - CGO_ENABLED=0
+
+# Build configuration
+builds:
+  - id: ithena-cli
+    main: ./main.go # Path to your main package
+    binary: ithena-cli # Output binary name
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+# Archive configuration (create tar.gz files)
+archives:
+  - id: default
+    format: tar.gz
+    # Name template for the archives
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    files:
+      - README.md # Include relevant files in the archive (path relative to project root?)
+
+# Generate checksums
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+
+# Snapshot configuration (for testing releases)
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+# Changelog generation
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "Merge pull request"
+      - "Merge branch"
+
+# ---- Release Configuration (Crucial for Public Release) ----
+# Publishes artifacts to the public ithena-one/ithena-cli-releases repository
+release:
+  # Target repository for the release assets
+  github:
+    owner: ithena-one
+    name: ithena-cli
+  
+  # Set draft to true if you want to manually publish after goreleaser runs
+  # draft: true
+
+# ---- Homebrew Tap Configuration (Crucial for Public Tap) ----
+# Updates the formula in the public ithena-one/homebrew-ithena repository
+# brews:
+#   - # Target repository for the release assets (where the formula lives)
+#     repository:
+#       owner: ithena-one
+#       name: homebrew-ithena
+#       # Specify the branch if not the default (e.g., main)
+#       # branch: main
+#       # Use standard GITHUB_TOKEN instead of custom variable
+#       # token is now configured directly in the action
+#     
+#     # Commit author for the formula update
+#     commit_author:
+#       name: goreleaserbot
+#       email: goreleaser@ithena.one
+#     
+#     # Simple commit message for formula update
+#     commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+
+#     # The Homebrew formula file name (defaults to project_name + .rb)
+#     # formula: "ithena-cli.rb"
+
+#     # Description and homepage for the formula
+#     description: "CLI tool for interacting with the Ithena platform"
+#     homepage: "https://ithena.one"
+
+#     # Optional: Add dependencies
+#     # dependencies:
+#     #   - name: git
+#     #   - name: node
+#     #     type: optional # or recommended
+
+#     # Optional: Specify installation command if binary name differs
+#     # install: |
+#     #   bin.install "your-binary-name" => "ithena-cli"
