@@ -24,6 +24,7 @@ import (
 	"github.com/zalando/go-keyring"
 )
 
+//go:embed all:frontend/dist
 var distFS embed.FS // This FS is rooted at webui/ and contains frontend/dist/*
 
 var verbose bool
