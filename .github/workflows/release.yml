@@ -23,6 +23,25 @@ jobs:
         with:
           go-version: '1.21' # Specify your Go version, or use 'stable'
 
+      # Add steps to build the frontend before running GoReleaser
+      - name: Set up Node.js (for pnpm)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Or your preferred Node.js LTS version
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8 # Or your preferred pnpm version
+
+      - name: Install Frontend Dependencies
+        working-directory: ./webui/frontend # Adjust if your frontend path is different
+        run: pnpm install --frozen-lockfile # Use --frozen-lockfile for CI
+
+      - name: Build Frontend
+        working-directory: ./webui/frontend # Adjust if your frontend path is different
+        run: pnpm build
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5
         with:

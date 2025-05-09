@@ -18,14 +18,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ithena-one/Ithena/packages/cli/localstore"
 	"github.com/gorilla/mux"
 	"github.com/ithena-one/Ithena/packages/cli/auth"
+	"github.com/ithena-one/Ithena/packages/cli/localstore"
 	"github.com/zalando/go-keyring"
 )
 
-//go:embed all:assets
-var embeddedAssets embed.FS // Embed the assets directory
+//go:embed all:frontend/dist
+var distFS embed.FS // This FS is rooted at webui/ and contains frontend/dist/*
 
 var verbose bool
 
@@ -35,7 +35,7 @@ func SetVerbose(v bool) {
 }
 
 const defaultPort = 8675
-const ithenaPlatformURL = "https://app.ithena.io"
+const ithenaPlatformURL = "https://ithena.one"
 
 type apiError struct {
 	Error string `json:"error"`
@@ -86,24 +86,47 @@ func StartServer(port int) {
 
 	address := fmt.Sprintf("localhost:%d", port)
 
-	assetsFS, err := fs.Sub(embeddedAssets, "assets")
+	// Create a sub-filesystem rooted at "frontend/dist" within distFS
+	contentFS, err := fs.Sub(distFS, "frontend/dist")
 	if err != nil {
-		log.Fatalf("WebUI Fatal: Failed to create sub FS for embedded assets: %v", err)
+		log.Fatalf("WebUI Fatal: Failed to create sub FS for frontend/dist from embedded data: %v", err)
 	}
 
 	router := mux.NewRouter()
 
-	// API routes
+	// API routes - These should be defined first
 	apiRouter := router.PathPrefix("/api").Subrouter()
 	apiRouter.HandleFunc("/logs", logsHandler).Methods("GET")
 	apiRouter.HandleFunc("/logs/{id}", logDetailHandler).Methods("GET")
 	apiRouter.HandleFunc("/auth/status", authStatusHandler).Methods("GET")
 
-	// Serve static assets from the 'assets' directory, accessed via /static/ prefix
-	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.FS(assetsFS))))
+	// Serve specific static files from the root of contentFS (e.g., vite.svg)
+	router.HandleFunc("/vite.svg", func(w http.ResponseWriter, r *http.Request) {
+		file, err := contentFS.Open("vite.svg") // Use contentFS
+		if err != nil {
+			log.Printf("WebUI Error: Could not open embedded vite.svg from contentFS: %v", err)
+			http.NotFound(w, r)
+			return
+		}
+		defer file.Close()
+		w.Header().Set("Content-Type", "image/svg+xml")
+		_, copyErr := io.Copy(w, file)
+		if copyErr != nil {
+			log.Printf("WebUI Error: Could not write vite.svg to response: %v", copyErr)
+		}
+	})
 
-	// Serve index.html for the root path
-	router.HandleFunc("/", rootHandler(assetsFS))
+	// Serve static assets from the 'assets' subdirectory within contentFS
+	assetsDirFS, err := fs.Sub(contentFS, "assets") // Create sub-FS for the 'assets' directory within contentFS
+	if err != nil {
+		log.Printf("WebUI Warning: Could not create sub FS for embedded assets directory: %v.", err)
+	} else {
+		router.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", http.FileServer(http.FS(assetsDirFS))))
+	}
+
+	// SPA Handler: Serves index.html for all other GET requests.
+	// It uses contentFS, and serveIndexHTML will attempt contentFS.Open("index.html")
+	router.PathPrefix("/").Handler(spaHandler(contentFS))
 
 	srv := &http.Server{
 		Addr:    address,
@@ -139,24 +162,42 @@ func StartServer(port int) {
 	log.Println("WebUI: Server exited gracefully")
 }
 
-func rootHandler(assetsFS fs.FS) http.HandlerFunc {
+// spaHandler serves index.html for all paths that are not API calls or specific static files.
+func spaHandler(contentFS fs.FS) http.HandlerFunc { // Parameter renamed for clarity
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
-			return
-		}
-		file, err := assetsFS.Open("index.html")
-		if err != nil {
-			log.Printf("WebUI Error: Could not open embedded index.html from assetsFS: %v", err)
-			http.Error(w, "Could not load application.", http.StatusInternalServerError)
-			return
-		}
-		defer file.Close()
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, err = io.Copy(w, file)
-		if err != nil {
-			log.Printf("WebUI Error: Could not write embedded index.html to response: %v", err)
-		}
+		serveIndexHTML(w, r, contentFS)
+	}
+}
+
+// serveIndexHTML is a helper to serve the main index.html file.
+func serveIndexHTML(w http.ResponseWriter, r *http.Request, contentFS fs.FS) { // Parameter renamed for clarity
+	// --- REMOVE DIAGNOSTIC LOGGING (or comment out) ---
+	// log.Println("--- Files in contentFS root (serveIndexHTML) ---")
+	// errList := fs.WalkDir(contentFS, ".", func(path string, d fs.DirEntry, err error) error {
+	// 	if err != nil {
+	// 		log.Printf("WalkDir error for path '%s': %v", path, err)
+	// 		return err
+	// 	}
+	// 	log.Printf("Found in contentFS: %s (dir: %t)", path, d.IsDir())
+	// 	return nil
+	// })
+	// if errList != nil {
+	// 	log.Printf("Error during fs.WalkDir on contentFS: %v", errList)
+	// }
+	// log.Println("-------------------------------------------")
+	// --- END DIAGNOSTIC LOGGING ---
+
+	file, err := contentFS.Open("index.html") // This will now use the correct filesystem view
+	if err != nil {
+		log.Printf("WebUI Error: Could not open embedded index.html from contentFS: %v", err)
+		http.Error(w, "Could not load application.", http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, err = io.Copy(w, file)
+	if err != nil {
+		log.Printf("WebUI Error: Could not write embedded index.html to response: %v", err)
 	}
 }
 
@@ -175,9 +216,9 @@ func logsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filters := localstore.LogQueryFilters{
-		Status:    query.Get("status"),
-		ToolName:  query.Get("tool_name"),
-		McpMethod: query.Get("mcp_method"),
+		Status:     query.Get("status"),
+		ToolName:   query.Get("tool_name"),
+		McpMethod:  query.Get("mcp_method"),
 		SearchTerm: query.Get("search"),
 	}
 
@@ -237,4 +278,4 @@ func openBrowser(url string) {
 	if err != nil {
 		log.Printf("WebUI Info: Failed to open browser automatically: %v. Please open manually.", err)
 	}
-} 
+}
