@@ -18,14 +18,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ithena-one/Ithena/packages/cli/localstore"
 	"github.com/gorilla/mux"
 	"github.com/ithena-one/Ithena/packages/cli/auth"
+	"github.com/ithena-one/Ithena/packages/cli/localstore"
 	"github.com/zalando/go-keyring"
 )
 
-//go:embed all:assets
-var embeddedAssets embed.FS // Embed the assets directory
+var embeddedAssets embed.FS // Embed the frontend/dist directory
 
 var verbose bool
 
@@ -86,9 +85,11 @@ func StartServer(port int) {
 
 	address := fmt.Sprintf("localhost:%d", port)
 
-	assetsFS, err := fs.Sub(embeddedAssets, "assets")
+	// Attempt to access the "frontend/dist" subdirectory within the embedded FS.
+	// This path must match the path used in the //go:embed directive.
+	assetsFS, err := fs.Sub(embeddedAssets, "frontend/dist")
 	if err != nil {
-		log.Fatalf("WebUI Fatal: Failed to create sub FS for embedded assets: %v", err)
+		log.Fatalf("WebUI Fatal: Failed to create sub FS for embedded frontend/dist assets: %v. Ensure frontend build exists and embed path is correct.", err)
 	}
 
 	router := mux.NewRouter()
@@ -99,11 +100,19 @@ func StartServer(port int) {
 	apiRouter.HandleFunc("/logs/{id}", logDetailHandler).Methods("GET")
 	apiRouter.HandleFunc("/auth/status", authStatusHandler).Methods("GET")
 
-	// Serve static assets from the 'assets' directory, accessed via /static/ prefix
-	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.FS(assetsFS))))
+	// Serve static assets from the 'frontend/dist' directory (e.g., CSS, JS, images)
+	// These will be accessed by paths like /assets/index.XYZ.js or /index.css in modern frontend builds
+	// The rootHandler serves index.html at '/', so other static assets need a prefix.
+	// Vite typically places assets in an 'assets' subfolder within 'dist', or directly in 'dist'.
+	// We will serve everything from the root of assetsFS (which is frontend/dist).
+	// The frontend's index.html will reference these assets with correct relative paths.
+	router.PathPrefix("/").Handler(http.FileServer(http.FS(assetsFS)))
 
-	// Serve index.html for the root path
+	// Serve index.html for the root path AND any other path not matched by API or specific files.
+	// This is crucial for single-page applications (SPAs) where routing is handled client-side.
 	router.HandleFunc("/", rootHandler(assetsFS))
+	// Add a SPA handler for non-API routes to always serve index.html
+	router.PathPrefix("/").HandlerFunc(spaHandler(assetsFS))
 
 	srv := &http.Server{
 		Addr:    address,
@@ -141,22 +150,43 @@ func StartServer(port int) {
 
 func rootHandler(assetsFS fs.FS) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
-			return
-		}
-		file, err := assetsFS.Open("index.html")
-		if err != nil {
-			log.Printf("WebUI Error: Could not open embedded index.html from assetsFS: %v", err)
-			http.Error(w, "Could not load application.", http.StatusInternalServerError)
-			return
-		}
-		defer file.Close()
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, err = io.Copy(w, file)
-		if err != nil {
-			log.Printf("WebUI Error: Could not write embedded index.html to response: %v", err)
-		}
+		// This specific root handler might become redundant if spaHandler correctly serves index.html for '/'
+		// However, keeping it for explicit '/' handling is fine.
+		serveIndexHTML(w, r, assetsFS)
+	}
+}
+
+// spaHandler serves index.html for all paths that are not API calls or specific static files.
+// This allows client-side routing in the SPA to function correctly.
+func spaHandler(assetsFS fs.FS) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Check if the requested path likely corresponds to a static file directly.
+		// This is a simple check; more robust checks might be needed depending on asset structure.
+		// For Vite, assets often have extensions like .js, .css, .svg, .png, etc.
+		// Or they might be in a subdirectory like /assets/
+		// If the path seems like a direct file request and it's not found by http.FileServer earlier,
+		// then it's likely a SPA route, so serve index.html.
+
+		// We let http.FileServer (mounted at router.PathPrefix("/")) try to serve static files first.
+		// If that doesn't find a file, this handler will be called.
+		// We always serve index.html for any path that reaches here, assuming it's a SPA route.
+		serveIndexHTML(w, r, assetsFS)
+	}
+}
+
+// serveIndexHTML is a helper to serve the main index.html file.
+func serveIndexHTML(w http.ResponseWriter, r *http.Request, assetsFS fs.FS) {
+	file, err := assetsFS.Open("index.html")
+	if err != nil {
+		log.Printf("WebUI Error: Could not open embedded index.html from assetsFS (expected at frontend/dist/index.html): %v", err)
+		http.Error(w, "Could not load application.", http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, err = io.Copy(w, file)
+	if err != nil {
+		log.Printf("WebUI Error: Could not write embedded index.html to response: %v", err)
 	}
 }
 
@@ -175,9 +205,9 @@ func logsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filters := localstore.LogQueryFilters{
-		Status:    query.Get("status"),
-		ToolName:  query.Get("tool_name"),
-		McpMethod: query.Get("mcp_method"),
+		Status:     query.Get("status"),
+		ToolName:   query.Get("tool_name"),
+		McpMethod:  query.Get("mcp_method"),
 		SearchTerm: query.Get("search"),
 	}
 
@@ -237,4 +267,4 @@ func openBrowser(url string) {
 	if err != nil {
 		log.Printf("WebUI Info: Failed to open browser automatically: %v. Please open manually.", err)
 	}
-} 
+}
