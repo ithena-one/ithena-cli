@@ -32,7 +32,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8 # Or your preferred pnpm version
+          version: 10 # Or your preferred pnpm version
 
       - name: Install Frontend Dependencies
         working-directory: ./webui/frontend # Adjust if your frontend path is different
