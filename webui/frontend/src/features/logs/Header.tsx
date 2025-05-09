@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import ithenaLogo from '@/assets/ithena-logo.svg';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+
 const ITHENA_PLATFORM_URL_FALLBACK = "https://ithena.one";
 
 interface AuthStatus {
@@ -34,9 +37,6 @@ export default function Header() {
 
   const platformUrl = authStatus?.platformURL || ITHENA_PLATFORM_URL_FALLBACK;
 
-  const baseButtonClasses = "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
-  const platformButtonClasses = `${baseButtonClasses} bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 h-9`; // Assumes bg-primary is dark, text-primary-foreground is light
-
   return (
     // Uses Tailwind utilities and respects potential dark mode via CSS variables from index.css
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -52,28 +52,29 @@ export default function Header() {
             {isLoadingAuth ? (
               <span className="text-sm text-muted-foreground">Loading auth...</span>
             ) : authStatus ? (
-              <span 
-                className={`text-xs px-2.5 py-1 rounded-full font-semibold ${ 
-                  authStatus.authenticated 
-                    ? 'bg-green-500 text-black'
-                    : 'bg-destructive text-black' 
-                }`}
-              >
-                {authStatus.authenticated ? 'Authenticated' : 'Unauthenticated'}
-              </span>
+              authStatus.authenticated ? (
+                <Badge variant="default" className="bg-green-500 hover:bg-green-500/90 text-white select-none">
+                  Authenticated
+                </Badge>
+              ) : (
+                <Badge variant="destructive" className="select-none">
+                  Unauthenticated
+                </Badge>
+              )
             ) : (
-              <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-yellow-400 text-yellow-800">
+              <Badge variant="outline" className="select-none">
                 Status Unknown
-              </span>
+              </Badge>
             )}
-            <a
-              href={platformUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={platformButtonClasses} 
-            >
-              Go to Platform
-            </a>
+            <Button variant="secondary" size="sm" asChild>
+              <a
+                href={platformUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Go to Platform
+              </a>
+            </Button>
           </div>
         </div>
       </div>
