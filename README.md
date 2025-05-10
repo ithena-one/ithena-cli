@@ -14,6 +14,10 @@ The Ithena CLI (`ithena-cli`) makes debugging your **Model Context Protocol (MCP
 
 **See your MCP traffic locally, in real-time, without sending data to the cloud.**
 
+<p align="center">
+  <img src="./public/ithena-cli-screenshot.jpg" alt="Ithena CLI Screenshot" width="800">
+</p>
+
 ## Key Benefits for MCP Developers
 
 *   **Instant Local Visibility:** Immediately see requests, responses, errors, and timings for MCP calls. No more "silent failures" or guessing what parameters were sent.
@@ -202,11 +206,6 @@ To see the captured MCP interactions:
 ithena-cli logs show
 ```
 This starts a local web server (default: port 8675). Open the provided URL in your browser to view, search, and filter your MCP logs.
-
-<p align="center">
-  <!-- TODO: Add a GIF or screenshot here of the local log viewer -->
-  <em>(Imagine a GIF here showing the local log viewer with MCP messages)</em>
-</p>
 
 ## Optional: Connecting to the Ithena Platform
 
