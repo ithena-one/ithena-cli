@@ -28,6 +28,7 @@ import (
 var distFS embed.FS // This FS is rooted at webui/ and contains frontend/dist/*
 
 var verbose bool
+var cliVersion string // To store the CLI version
 
 // SetVerbose enables or disables verbose logging for the webui package.
 func SetVerbose(v bool) {
@@ -79,9 +80,10 @@ func authStatusHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // StartServer initializes and starts the local HTTP server for viewing logs.
-func StartServer(port int) {
+func StartServer(port int, version string) { // Added version parameter
+	cliVersion = version // Store the version
 	if verbose {
-		log.Printf("WebUI: Attempting to start server on port %d...", port)
+		log.Printf("WebUI: Attempting to start server on port %d, CLI version: %s...", port, cliVersion)
 	}
 
 	address := fmt.Sprintf("localhost:%d", port)
@@ -99,6 +101,7 @@ func StartServer(port int) {
 	apiRouter.HandleFunc("/logs", logsHandler).Methods("GET")
 	apiRouter.HandleFunc("/logs/{id}", logDetailHandler).Methods("GET")
 	apiRouter.HandleFunc("/auth/status", authStatusHandler).Methods("GET")
+	apiRouter.HandleFunc("/version", versionHandler).Methods("GET") // Added version endpoint
 
 	// Serve specific static files from the root of contentFS (e.g., vite.svg)
 	router.HandleFunc("/vite.svg", func(w http.ResponseWriter, r *http.Request) {
@@ -160,6 +163,15 @@ func StartServer(port int) {
 	}
 
 	log.Println("WebUI: Server exited gracefully")
+}
+
+func versionHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]string{"version": cliVersion}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("WebUI API Error: Failed to encode version response: %v", err)
+		writeError(w, "Failed to encode version response", http.StatusInternalServerError)
+	}
 }
 
 // spaHandler serves index.html for all paths that are not API calls or specific static files.

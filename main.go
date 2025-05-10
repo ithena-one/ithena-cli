@@ -7,36 +7,24 @@ import (
 	"log"
 	"os"
 	"strings"
-	"text/tabwriter" // Import tabwriter
+	"text/tabwriter" 
 
-	"github.com/fatih/color" // Import color library
+	"github.com/fatih/color"
 
-	// Import internal packages
 	"github.com/ithena-one/Ithena/packages/cli/auth"
 	"github.com/ithena-one/Ithena/packages/cli/config"
 	"github.com/ithena-one/Ithena/packages/cli/observability"
 	"github.com/ithena-one/Ithena/packages/cli/placeholder"
 	"github.com/ithena-one/Ithena/packages/cli/wrapper"
-	"github.com/ithena-one/Ithena/packages/cli/cmd/logs" // Import the new logs package
-	// NOTE: Ensure module path in go.mod is correct (e.g., github.com/Kevandrew/Ithena)
+	"github.com/ithena-one/Ithena/packages/cli/cmd/logs" 
 )
 
-// --- Argument Handling for Wrapper Mode ---
-// Custom type to handle multiple occurrences of flags
-// Note: stringSlice is kept for now in case needed for future repeatable flags,
-// but execArgs and execEnv which used it are removed.
-// type stringSlice []string
-
-// func (s *stringSlice) String() string {
-// 	return strings.Join(*s, ", ")
-// }
-
-// func (s *stringSlice) Set(value string) error {
-// 	*s = append(*s, value)
-// 	return nil
-// }
 
 var (
+	version string
+	commit  string
+	date    string
+
 	// Old flags removed
 	observeUrl string
 
@@ -50,6 +38,9 @@ var (
 
 	// Verbosity flag
 	verbose bool
+
+	// Version flag
+	showVersion bool
 
 	// New logs command flags
 	logsShowPort int // Flag for 'logs show --port'
@@ -81,9 +72,22 @@ func main() {
 	flag.StringVar(&wrapperConfigFile, "wrapper-config-file", defaultWrapperConfigFile, "Path to the wrapper configuration file (YAML)")
 	flag.StringVar(&observeUrl, "observe-url", defaultObserveUrl, "URL for the observability API endpoint")
 	flag.BoolVar(&verbose, "verbose", false, "Enable verbose logging output")
+	flag.BoolVar(&showVersion, "version", false, "Print version information and exit")
 	flag.Usage = printMainUsage
 
 	flag.Parse()
+
+	if showVersion {
+		// Note: The 'version', 'commit', and 'date' variables are expected to be set by ldflags during build
+		fmt.Printf("Ithena CLI version: %s\n", version)
+		if commit != "" {
+			fmt.Printf("Commit: %s\n", commit)
+		}
+		if date != "" {
+			fmt.Printf("Build Date: %s\n", date)
+		}
+		os.Exit(0)
+	}
 
 	observability.SetVerbose(verbose)
 	wrapper.SetVerbose(verbose)
@@ -126,7 +130,9 @@ func main() {
 				switch logsSubCommand {
 				case "show":
 					if verbose { log.Printf("Handling 'logs show' subcommand with port: %d", logsShowPort) }
-					logs.HandleLogsShowCommand(verbose, logsShowPort)
+					// Pass the version, commit, and date variables to the logs show command
+					// Note: 'version' variable is populated by ldflags during build.
+					logs.HandleLogsShowCommand(verbose, logsShowPort, version)
 					return
 				case "clear":
 					if verbose { log.Println("Handling 'logs clear' subcommand...") }
@@ -233,11 +239,12 @@ func printMainUsage() {
 	// Re-declare global flags here for iteration purposes ONLY, do not assign to the actual variables.
 	// Their actual values are parsed from flag.CommandLine.
 	var tempWrapperProfile, tempWrapperConfigFile, tempObserveUrl string
-	var tempVerbose bool
+	var tempVerbose, tempShowVersion bool
 	globalFlags.StringVar(&tempWrapperProfile, "wrapper-profile", "", "Name of the wrapper profile to use from the config file")
 	globalFlags.StringVar(&tempWrapperConfigFile, "wrapper-config-file", defaultWrapperConfigFile, "Path to the wrapper configuration file (YAML)")
 	globalFlags.StringVar(&tempObserveUrl, "observe-url", defaultObserveUrl, "URL for the observability API endpoint")
 	globalFlags.BoolVar(&tempVerbose, "verbose", false, "Enable verbose logging output")
+	globalFlags.BoolVar(&tempShowVersion, "version", false, "Print version information and exit") // Added for help text
 	
 	globalFlags.VisitAll(func(f *flag.Flag) {
 		// Fetch the actual global flag from the main flag set to get its properties
@@ -312,13 +319,3 @@ func printFlag(w *tabwriter.Writer, f *flag.Flag) {
 	description = strings.ReplaceAll(description, "\n", "\n    \t")
 	fmt.Fprintf(w, "%s %s\t%s\n", flagNameStyle.Sprint(flagId), flagTypeStr, description)
 }
-
-// Deprecated: printAuthUsage - now using generic printCommandUsage
-// func printAuthUsage() { ... }
-
-// stringValue is a custom type for string flags to get quoted default values.
-// This is not strictly necessary if we format default values manually in printFlag.
-// Keeping it simple for now and relying on manual formatting in printFlag.
-// type stringValue string
-// func (s *stringValue) Set(val string) error { *s = stringValue(val); return nil }
-// func (s *stringValue) String() string { return string(*s) } 

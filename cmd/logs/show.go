@@ -11,13 +11,13 @@ import (
 	"github.com/ithena-one/Ithena/packages/cli/webui" // Import webui package
 )
 
-var verbose bool
+// var verbose bool // Removed as it's passed as a parameter and not used at package level
 // const defaultWebUIPort = 8675 // Port is now passed as an argument
 
 // HandleLogsShowCommand handles the 'ithena-cli logs show' command.
-func HandleLogsShowCommand(verbose bool, port int) { // Add port parameter
+func HandleLogsShowCommand(verbose bool, port int, version string) { // Added version parameter
 	if verbose {
-		log.Printf("Executing 'logs show' command for port %d...", port)
+		log.Printf("Executing 'logs show' command for port %d (CLI version: %s)...", port, version)
 	}
 
 	localstore.SetVerbose(verbose) 
@@ -42,7 +42,7 @@ func HandleLogsShowCommand(verbose bool, port int) { // Add port parameter
 	fmt.Printf("Local logs are being read from: %s\n", dbPath)
 	fmt.Println("Press Ctrl+C to stop the server.")
 
-	webui.StartServer(port) // Use the passed port
+	webui.StartServer(port, version) // Pass the version to StartServer
 }
 
 // HandleLogsClearCommand handles the 'ithena-cli logs clear' command.

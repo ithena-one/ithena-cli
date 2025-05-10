@@ -5,3 +5,5 @@ dist/
 .env
 .env.local
 Ithena.code-workspace
+cli
+ithena-cli
