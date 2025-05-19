@@ -314,8 +314,9 @@ To help us understand usage patterns and improve `ithena-cli`, official builds o
 *   **Command Usage:** Which commands and subcommands are executed (e.g., `auth login`, `logs show`, `profile_wrap`). For `profile_wrap`, the profile name is included. For `direct_wrap`, the fact that a direct wrap was performed is noted.
 *   **Wrapper Configurations:** The number of wrappers configured when a `wrappers.yaml` file is loaded.
 *   **Log Actions:** Interactions with the local log store, such as "show requested" or "logs cleared".
+*   **MCP Log Captured:** An event is sent each time `ithena-cli` captures an MCP interaction (a JSON-RPC request/response pair). This event includes non-sensitive metadata such as the target alias (if used), MCP method name, tool name (if applicable), and the status (success/failure) of the interaction. This helps us understand the volume and types of MCP calls being processed.
 
-All data is associated with a randomly generated, anonymous machine ID. **No personally identifiable information (PII) or the content of your MCP logs/traffic is ever collected.**
+All data is associated with a randomly generated, anonymous machine ID. **No personally identifiable information (PII) or the content of your MCP logs/traffic (i.e., the actual JSON-RPC request/response bodies) is ever collected by the telemetry system.**
 
 **Why We Collect It:**
 This data helps us understand:
