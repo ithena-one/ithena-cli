@@ -14,10 +14,11 @@ import (
 
 	"github.com/fatih/color" // For colored output
 	"github.com/google/uuid"
-	"github.com/ithena-one/Ithena/packages/cli/auth" 
-	"github.com/ithena-one/Ithena/packages/cli/jsonrpc" 
+	"github.com/ithena-one/Ithena/packages/cli/auth"
+	"github.com/ithena-one/Ithena/packages/cli/jsonrpc"
 	"github.com/ithena-one/Ithena/packages/cli/localstore" // Import for local storage
-	"github.com/ithena-one/Ithena/packages/cli/types" // Import the new types package
+	"github.com/ithena-one/Ithena/packages/cli/telemetry"  // Import telemetry package
+	"github.com/ithena-one/Ithena/packages/cli/types"   // Import the new types package
 )
 
 // verbose controls internal debug logging for this package
@@ -75,8 +76,9 @@ func InitObservability() {
 
 func ShutdownObservability() {
 	log.Println("Observability: Shutting down...")
-	close(logChan) 
-	wg.Wait()      
+	close(logChan)
+	wg.Wait()
+	telemetry.Shutdown() // Call telemetry shutdown
 	log.Println("Observability worker stopped gracefully.")
 }
 
@@ -389,4 +391,4 @@ func CreateAuditRecordForError(errMsg string, alias *string, method *string, cor
 		// ResponsePreview: // Not applicable
 		ErrorDetails:      map[string]string{"error": errMsg, "message": "Failed during CLI operation"},
 	}
-} 
+}

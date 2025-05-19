@@ -305,6 +305,38 @@ ithena-cli auth logout   # Logout and remove credentials from keychain
 **Other Global Flags:**
 *   `--verbose`: Enables verbose logging output from `ithena-cli` itself for debugging the CLI.
 
+## Anonymized Telemetry
+
+To help us understand usage patterns and improve `ithena-cli`, official builds of the CLI collect anonymized telemetry data. We are committed to your privacy and transparency.
+
+**What We Collect (Anonymized):**
+*   **CLI Invocation:** Basic information like CLI version, OS type, and architecture.
+*   **Command Usage:** Which commands and subcommands are executed (e.g., `auth login`, `logs show`, `profile_wrap`). For `profile_wrap`, the profile name is included. For `direct_wrap`, the fact that a direct wrap was performed is noted.
+*   **Wrapper Configurations:** The number of wrappers configured when a `wrappers.yaml` file is loaded.
+*   **Log Actions:** Interactions with the local log store, such as "show requested" or "logs cleared".
+
+All data is associated with a randomly generated, anonymous machine ID. **No personally identifiable information (PII) or the content of your MCP logs/traffic is ever collected.**
+
+**Why We Collect It:**
+This data helps us understand:
+*   How many unique users (machines) are actively using the CLI.
+*   Which features are most popular, guiding future development and prioritization.
+*   The scale of interactions with different parts of the CLI.
+
+**API Key Management for Telemetry:**
+*   The PostHog API key used for telemetry in official `ithena-cli` releases is **NOT** present in the public source code.
+*   For official builds (e.g., those distributed via GitHub Releases), the API key is injected at build time.
+*   If you build `ithena-cli` from source, telemetry will be **disabled by default**. You can choose to enable it by providing your own PostHog API key and endpoint via the `ITHENA_POSTHOG_KEY` and `ITHENA_POSTHOG_ENDPOINT` environment variables if you wish to send data to your own PostHog instance.
+
+**How to Opt-Out:**
+You can easily opt-out of sending telemetry data by setting the following environment variable:
+```bash
+export ITHENA_TELEMETRY_OPTOUT=true
+```
+If this variable is set, no telemetry data will be sent, even if an API key is configured.
+
+We believe this telemetry system helps us build a better tool for the community while respecting user privacy. If you have any concerns, please feel free to open an issue on our GitHub repository.
+
 ## Building from Source
 
 1.  Ensure you have Go installed (version 1.21+ recommended).

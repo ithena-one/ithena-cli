@@ -15,8 +15,9 @@ import (
 	"github.com/ithena-one/Ithena/packages/cli/config"
 	"github.com/ithena-one/Ithena/packages/cli/observability"
 	"github.com/ithena-one/Ithena/packages/cli/placeholder"
+	"github.com/ithena-one/Ithena/packages/cli/telemetry" // Import telemetry
 	"github.com/ithena-one/Ithena/packages/cli/wrapper"
-	"github.com/ithena-one/Ithena/packages/cli/cmd/logs" 
+	"github.com/ithena-one/Ithena/packages/cli/cmd/logs"
 )
 
 
@@ -54,8 +55,13 @@ var logsCmd *flag.FlagSet
 func main() {
 	log.SetFlags(0) // Remove date, time, and file/line number prefixes
 
+	// Initialize telemetry system
+	telemetry.Init()
+	// Track CLI invocation event (common properties are added by TrackEvent)
+	telemetry.TrackEvent("cli_invoked", nil)
+
 	// Initialize observability system (starts worker goroutine)
-	observability.InitObservability()
+	observability.InitObservability() // Telemetry shutdown is called by observability's shutdown
 	// Ensure observability worker is shut down gracefully on exit
 	defer observability.ShutdownObservability()
 
@@ -91,6 +97,7 @@ func main() {
 
 	observability.SetVerbose(verbose)
 	wrapper.SetVerbose(verbose)
+	telemetry.SetVerbose(verbose) // Pass verbosity to telemetry
 	// localstore.SetVerbose(verbose) // Will be set if localstore is initialized
 
 	args := flag.Args() // Get all non-flag arguments
@@ -103,22 +110,27 @@ func main() {
 			if authCmd.NArg() > 0 {
 				authSubCommand := authCmd.Arg(0)
 				switch authSubCommand {
-				case "login": // Assuming 'login' is the default auth action if a subcommand is needed
+				case "login":
+					telemetry.TrackEvent("command_executed", map[string]interface{}{"command_name": "auth", "subcommand_name": "login"})
 					if verbose { log.Println("Handling 'auth login' subcommand...") }
-					auth.HandleAuth() // This is the original behavior
+					auth.HandleAuth()
 				case "status":
+					telemetry.TrackEvent("command_executed", map[string]interface{}{"command_name": "auth", "subcommand_name": "status"})
 					if verbose { log.Println("Handling 'auth status' subcommand...") }
 					auth.HandleAuthStatusCommand()
-				case "deauth", "logout": // Allow 'logout' as an alias for 'deauth'
+				case "deauth", "logout":
+					telemetry.TrackEvent("command_executed", map[string]interface{}{"command_name": "auth", "subcommand_name": "deauth"}) // Canonical name
 					if verbose { log.Println("Handling 'auth deauth/logout' subcommand...") }
 					auth.HandleDeauthCommand()
 				default:
+					// telemetry.TrackEvent("command_executed", map[string]interface{}{"command_name": "auth", "subcommand_name": "unknown", "unknown_subcommand": authSubCommand})
 					fmt.Fprintf(os.Stderr, "Error: Unknown subcommand for 'auth': %s\n", authSubCommand)
 					authCmd.Usage()
 					exitWithError(1)
 				}
 			} else {
 				// Default action for 'auth' (no subcommand given) is to initiate login
+				telemetry.TrackEvent("command_executed", map[string]interface{}{"command_name": "auth", "subcommand_name": "login"}) // Defaulting to login
 				if verbose { log.Println("Handling 'auth' subcommand (defaulting to login)...") }
 				auth.HandleAuth()
 			}
@@ -129,16 +141,17 @@ func main() {
 				logsSubCommand := logsCmd.Arg(0)
 				switch logsSubCommand {
 				case "show":
+					// Telemetry for logs actions will be handled within HandleLogsShowCommand
 					if verbose { log.Printf("Handling 'logs show' subcommand with port: %d", logsShowPort) }
-					// Pass the version, commit, and date variables to the logs show command
-					// Note: 'version' variable is populated by ldflags during build.
 					logs.HandleLogsShowCommand(verbose, logsShowPort, version)
 					return
 				case "clear":
+					// Telemetry for logs actions will be handled within HandleLogsClearCommand
 					if verbose { log.Println("Handling 'logs clear' subcommand...") }
 					logs.HandleLogsClearCommand(verbose)
 					return
 				default:
+					// telemetry.TrackEvent("command_executed", map[string]interface{}{"command_name": "logs", "subcommand_name": "unknown", "unknown_subcommand": logsSubCommand})
 					fmt.Fprintf(os.Stderr, "Error: Unknown subcommand for 'logs': %s\n", logsSubCommand)
 					logsCmd.Usage()
 					exitWithError(1)
@@ -163,12 +176,10 @@ func main() {
 			if len(args) > 1 {
 				commandArgs = args[1:]
 			}
+			telemetry.TrackEvent("command_executed", map[string]interface{}{"command_name": "direct_wrap", "wrapped_command": commandToWrap})
 			if verbose {
 				log.Printf("Wrapper mode: Wrapping direct command. Command: '%s', Args: '%v'", commandToWrap, commandArgs)
 			}
-			// For direct wrapping, use empty env map and command itself as alias.
-			// This means the wrapped command won't inherit the parent environment directly through this map.
-			// If os.Environ() inheritance is desired, this part needs to be adjusted.
 			wrapper.Run(commandToWrap, commandArgs, make(map[string]string), commandToWrap, observeUrl)
 			return
 		}
@@ -187,11 +198,15 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Error loading wrapper config '%s': %v\n", wrapperConfigFile, err)
 			exitWithError(1)
 		}
+		// Track wrapper_config_loaded event
+		telemetry.TrackEvent("wrapper_config_loaded", map[string]interface{}{"configured_wrapper_count": len(wrapperConf.Wrappers)})
+
 		profile, found := wrapperConf.Wrappers[wrapperProfile]
 		if !found {
 			fmt.Fprintf(os.Stderr, "Error: Wrapper profile '%s' not found in config file '%s'\n", wrapperProfile, wrapperConfigFile)
 			exitWithError(1)
 		}
+		telemetry.TrackEvent("command_executed", map[string]interface{}{"command_name": "profile_wrap", "profile_name": wrapperProfile})
 		resolvedEnv, err := placeholder.ResolvePlaceholders(profile.Env)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error resolving environment variable placeholders for profile '%s': %v\n", wrapperProfile, err)

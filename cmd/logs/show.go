@@ -8,7 +8,8 @@ import (
 	"strings" // For trimming input
 
 	"github.com/ithena-one/Ithena/packages/cli/localstore"
-	"github.com/ithena-one/Ithena/packages/cli/webui" // Import webui package
+	"github.com/ithena-one/Ithena/packages/cli/telemetry" // Import telemetry
+	"github.com/ithena-one/Ithena/packages/cli/webui"   // Import webui package
 )
 
 // var verbose bool // Removed as it's passed as a parameter and not used at package level
@@ -16,11 +17,14 @@ import (
 
 // HandleLogsShowCommand handles the 'ithena-cli logs show' command.
 func HandleLogsShowCommand(verbose bool, port int, version string) { // Added version parameter
+	telemetry.TrackEvent("command_executed", map[string]interface{}{"command_name": "logs", "subcommand_name": "show"})
+	telemetry.TrackEvent("logs_action_taken", map[string]interface{}{"log_action": "show_requested"})
+
 	if verbose {
 		log.Printf("Executing 'logs show' command for port %d (CLI version: %s)...", port, version)
 	}
 
-	localstore.SetVerbose(verbose) 
+	localstore.SetVerbose(verbose)
 	webui.SetVerbose(verbose) // Pass verbosity to webui as well
 
 	err := localstore.InitDB("")
@@ -47,6 +51,9 @@ func HandleLogsShowCommand(verbose bool, port int, version string) { // Added ve
 
 // HandleLogsClearCommand handles the 'ithena-cli logs clear' command.
 func HandleLogsClearCommand(verbose bool) {
+	telemetry.TrackEvent("command_executed", map[string]interface{}{"command_name": "logs", "subcommand_name": "clear"})
+	// logs_action_taken will be tracked after confirmation
+
 	if verbose {
 		log.Println("Executing 'logs clear' command...")
 	}
@@ -67,6 +74,8 @@ func HandleLogsClearCommand(verbose bool) {
 		fmt.Println("Operation cancelled.")
 		return
 	}
+
+	telemetry.TrackEvent("logs_action_taken", map[string]interface{}{"log_action": "cleared"})
 
 	// Close the database connection if it's open, before deleting the file.
 	if localstore.DB != nil {
@@ -92,4 +101,4 @@ func HandleLogsClearCommand(verbose bool) {
 	if verbose {
 		log.Println("'logs clear' command finished.")
 	}
-} 
+}
