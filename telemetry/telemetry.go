@@ -27,6 +27,9 @@ var (
 	optOut        bool
 	isInitialized bool
 	verbose       bool
+
+	// posthogAPIKey can be set at build-time for official releases.
+	posthogAPIKey string
 )
 
 // SetVerbose enables or disables verbose logging for the telemetry package.
@@ -48,15 +51,20 @@ func Init() {
 			return
 		}
 
-		apiKey := os.Getenv("ITHENA_POSTHOG_KEY")
+		// Prioritize build-time key, fallback to environment variable.
+		currentAPIKey := posthogAPIKey
+		if currentAPIKey == "" {
+			currentAPIKey = os.Getenv("ITHENA_POSTHOG_KEY")
+		}
+
 		apiEndpoint := os.Getenv("ITHENA_POSTHOG_ENDPOINT")
 		if apiEndpoint == "" {
 			apiEndpoint = posthog.DefaultEndpoint // Use default if not set
 		}
 
-		if apiKey == "" {
-			// No API key, telemetry remains disabled but considered initialized
-			// This allows users building from source to not have telemetry by default
+		if currentAPIKey == "" {
+			// No API key from build-time or env var, telemetry remains disabled.
+			// This allows users building from source without env var to not have telemetry by default.
 			isInitialized = true
 			return
 		}
@@ -79,10 +87,10 @@ func Init() {
 			config.Verbose = true // Enable PostHog client's internal verbose logging if CLI verbose is on
 		}
 
-		client, err := posthog.NewWithConfig(apiKey, config)
+		client, err := posthog.NewWithConfig(currentAPIKey, config)
 		if err != nil {
 			if verbose {
-				log.Printf("Telemetry: Failed to initialize PostHog client: %v. Telemetry will be disabled.", err)
+				log.Printf("Telemetry: Failed to initialize PostHog client with key (len %d): %v. Telemetry will be disabled.", len(currentAPIKey), err)
 			}
 			return
 		}

@@ -17,6 +17,7 @@ builds:
     binary: ithena-cli # Output binary name
     ldflags:
       - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+      - -X 'github.com/ithena-one/Ithena/packages/cli/telemetry.posthogAPIKey={{ .Env.POSTHOG_API_KEY }}'
     goos:
       - linux
       - darwin

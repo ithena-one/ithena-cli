@@ -12,6 +12,7 @@ permissions:
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,5 +53,6 @@ jobs:
           args: release --clean # Use --clean to ensure a clean build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY_OFFICIAL }} # Pass the secret to GoReleaser
           # If you need to sign artifacts, you might need a GPG_FINGERPRINT
-          # GPG_FINGERPRINT: ${{ secrets.GPG_FINGERPRINT }} 
+          # GPG_FINGERPRINT: ${{ secrets.GPG_FINGERPRINT }}
