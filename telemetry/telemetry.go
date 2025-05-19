@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+	"time" // Import time for batching interval
 
 	"github.com/google/uuid"
 	"github.com/posthog/posthog-go"
@@ -13,7 +14,9 @@ import (
 )
 
 const (
-	telemetryIDFileName = "telemetry_id.txt"
+	telemetryIDFileName        = "telemetry_id.txt"
+	defaultTelemetryBatchSize  = 5                // More aggressive batching for CLI
+	defaultTelemetryInterval   = 5 * time.Second  // More aggressive interval for CLI
 )
 
 var (
@@ -68,11 +71,12 @@ func Init() {
 		}
 
 		config := posthog.Config{
-			Endpoint: apiEndpoint,
-			// TODO: Consider making PostHog batch size and interval configurable if default behavior is not optimal for CLI.
+			Endpoint:  apiEndpoint,
+			BatchSize: defaultTelemetryBatchSize,
+			Interval:  defaultTelemetryInterval,
 		}
 		if verbose {
-			config.Verbose = true // Enable PostHog client's internal verbose logging
+			config.Verbose = true // Enable PostHog client's internal verbose logging if CLI verbose is on
 		}
 
 		client, err := posthog.NewWithConfig(apiKey, config)
